@@ -2,6 +2,7 @@ import sys
 import pygame
 from pygame.locals import *
 import math
+from datetime import datetime, timedelta
 
 
 class AirPlane():
@@ -14,9 +15,23 @@ class AirPlane():
         self.acceleration = 1
         self.angle = 30
         self.turn = 1  # -1: left, 1: right
+        self.leftBullet = 10
+        self.reloadTime = 1
         self.bullets = []
+        self.last_reload = None
+        self.is_reloading = False
 
     def update(self, dt):
+        if self.leftBullet == 0:
+
+            if not self.is_reloading:
+                self.last_reload = datetime.now()
+                self.is_reloading = True
+
+            if self.last_reload + timedelta(seconds=1) < datetime.now() and self.is_reloading:
+                self.leftBullet = 10
+                self.is_reloading = False
+
         self.angle += self.turn * 0.2 * dt
         self.x += self.velocity * \
             math.sin(math.radians(self.angle)) * dt * 0.05
@@ -35,6 +50,19 @@ class AirPlane():
         for bullet in self.bullets:
             bullet.update(dt)
 
+    def draw_bullets(self, screen):
+        for bullet in self.bullets:
+            bullet.draw(screen)
+
+    def draw_reload_progress(self, screen):
+        if self.is_reloading:
+            reload_progress = (
+                datetime.now() - self.last_reload).total_seconds() / self.reloadTime
+            pygame.draw.rect(screen, (255, 255, 255),
+                             (self.x - 20, self.y - 50, 40*reload_progress, 10))
+            pygame.draw.rect(screen, (0, 0, 0),
+                             (self.x - 20, self.y - 50, 40, 10), 1)
+
     def draw(self, screen):
         radians = math.radians(self.angle)
 
@@ -43,24 +71,26 @@ class AirPlane():
         pygame.draw.line(screen, (255, 0, 0), (self.x, self.y),
                          (self.x + 45*math.sin(radians), self.y + 45*math.cos(radians)), 2)
 
-        for bullet in self.bullets:
-            bullet.draw(screen)
+        self.draw_bullets(screen)
+        self.draw_reload_progress(screen)
 
     def fire(self):
-        self.bullets.append(Bullet(self.x, self.y, self.angle))
+        if self.leftBullet != 0:
+            self.leftBullet -= 1
+            self.bullets.append(Bullet(self.x, self.y, self.angle))
 
-    def controls(self, key):
-        if key == pygame.K_a:
+    def controls(self, event):
+        if event.key == pygame.K_a:
             self.turn = -1
-        elif key == pygame.K_d:
+        elif event.key == pygame.K_d:
             self.turn = 1
-        elif key == pygame.K_w:
+        elif event.key == pygame.K_w:
             if self.velocity < 20:
                 self.velocity += self.acceleration
-        elif key == pygame.K_s:
+        elif event.key == pygame.K_s:
             if self.velocity > 1:
                 self.velocity -= self.acceleration
-        elif key == pygame.K_SPACE:
+        elif event.key == pygame.K_SPACE:
             self.fire()
 
 
@@ -86,8 +116,12 @@ class Bullet():
 
 
 class GameEngine():
+
     def __init__(self):
+        pygame.init()
         self.gameObjects = []
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("Arial", 18, bold=True)
         self.main()
 
     def update(self, dt):
@@ -111,7 +145,12 @@ class GameEngine():
 
             if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 for gameObject in self.gameObjects:
-                    gameObject.controls(event.key)
+                    gameObject.controls(event)
+
+    def fps_counter(self, screen):
+        fps = str(int(self.clock.get_fps()))
+        fps_t = self.font.render(fps, 1, pygame.Color("RED"))
+        screen.blit(fps_t, (0, 0))
 
     def draw(self, screen):
         """
@@ -123,15 +162,14 @@ class GameEngine():
         for gameObject in self.gameObjects:
             gameObject.draw(screen)
 
+        self.fps_counter(screen)
+
         pygame.display.flip()
 
     def main(self):
-        self.gameObjects.append(AirPlane(50, 50, 40, 40))
+        self.gameObjects.append(AirPlane(700, 300, 40, 40))
 
-        pygame.init()
         fps = 60.0
-        fpsClock = pygame.time.Clock()
-
         width, height = 1280, 720
         screen = pygame.display.set_mode((width, height))
 
@@ -140,7 +178,7 @@ class GameEngine():
             self.update(dt)
             self.draw(screen)
 
-            dt = fpsClock.tick(fps)
+            dt = self.clock.tick(fps)
 
 
 if __name__ == '__main__':
