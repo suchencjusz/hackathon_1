@@ -63,7 +63,7 @@ def get_start_location(players):
     return (x, y)
 
 
-def check_collision():
+def check_collision(conn):
     global players
     for player in players:
         for bullet in players[player]['bullets']:
@@ -72,8 +72,14 @@ def check_collision():
                     if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 40:
                         print("[COLLISION]", players[player]['name'],
                               "hit", players[player2]['name'])
-                        players[player2]['health'] -= 5
+                        players[player2]['health'] -= 25
+                        if players[player2]['health'] <= 0:
+                            players[player]['score'] += 1
+                            players[player2]['health'] = 100
+                            players[player2]['x'], players[player2]['y'] = get_start_location(
+                                players)
                         break
+
 
 def threaded_bot(_id):
     """
@@ -87,9 +93,10 @@ def threaded_bot(_id):
 
     print("[LOG]", str(_id)+"-bot spawned.")
 
-    bt = Bot(300,300,30,_id,"bot(but)",colors[1],100)
+    bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 100)
 
-    players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color, "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id}
+    players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color,
+                           "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id}
 
     while True:
         bt.update()
@@ -114,7 +121,7 @@ def threaded_client(conn, _id):
     current_id = _id
 
     # recieve a name from the client
-    data = conn.recv(16)
+    data = conn.recv(128)
     name = data.decode("utf-8")
     print("[LOG]", name, "connected to the server.")
 
@@ -173,7 +180,7 @@ def threaded_client(conn, _id):
             players[current_id]["y"] = y
             players[current_id]["health"] = health
 
-            check_collision()
+            check_collision(conn)
 
             send_data = pickle.dumps((players))
 
@@ -205,7 +212,7 @@ def threaded_client(conn, _id):
         #     print(e)
         #     break
 
-        time.sleep(0.001)
+        time.sleep(0.01)
 
 
 # MAINLOOP

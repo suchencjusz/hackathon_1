@@ -14,7 +14,8 @@ class GameEngineArek():
     def __init__(self):
         pygame.init()
         self.font = pygame.font.SysFont('arial', 16)
-        self.bg = pygame.image.load('img/bg.png')
+        self.name = "noname"
+        self.bg = pygame.image.load('img/bg.jpg')
         self.bg = pygame.transform.scale(self.bg, (1280, 720))
         self.sprites = pygame.sprite.Group()
         self.clock = pygame.time.Clock()
@@ -88,7 +89,8 @@ class GameEngineArek():
     def main(self):
         client = Network()
         server_data = client.connect(self.name)
-        max_fps = 60.0
+
+        max_fps = 30.0
 
         self.my_id = server_data['id']
         self.gameObjects[self.my_id] = Airplane(
@@ -106,11 +108,14 @@ class GameEngineArek():
                 if player_id == self.my_id:
                     self.gameObjects[self.my_id].set_health(
                         player_data["health"])
+                    self.gameObjects[self.my_id].set_score(
+                        int(player_data["score"]/2))
+                    self.gameObjects[self.my_id].set_position(
+                        player_data["x"], player_data["y"])
                 else:
                     self.gameObjects[player_id] = Airplane(
                         player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"], player_data['health'], player_data['score'])
 
-                    # print(player_data['bullets'])
                     for bullet in player_data['bullets']:
                         self.gameObjects[player_id].create_bullet(
                             bullet['x'], bullet['y'], bullet['angle'], player_id)
