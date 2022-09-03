@@ -22,7 +22,7 @@ class AirPlane(pygame.sprite.Sprite):
         self.width = 50
         self.height = 50
         self.velocity = 1
-        self.acceleration = 0.1
+        self.acceleration = 0.5
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
         self.bullets = []
@@ -70,7 +70,7 @@ class AirPlane(pygame.sprite.Sprite):
     def draw_name(self, screen):
 
         font = pygame.font.SysFont('arial', 16)
-        text = font.render(f"{self.name}", True, (0, 0, 0))
+        text = font.render(f"{self.name}", True, (255, 255, 255))
         screen.blit(
             text, text.get_rect(center=(self.x, self.y - 40)))
 
@@ -83,12 +83,17 @@ class AirPlane(pygame.sprite.Sprite):
             pygame.draw.rect(screen, (0, 0, 0),
                              (self.x - 20, self.y + 40, 40, 10), 1)
 
-    def draw_airplane(self, screen):
+    def draw_debug_lines(self, screen):
         radians = math.radians(self.angle)
         pygame.draw.circle(screen, self.color, (self.x, self.y), 25)
 
         pygame.draw.line(screen, (255, 0, 0), (self.x, self.y),
                          (self.x + 45*math.sin(radians), self.y + 45*math.cos(radians)), 3)
+
+    def draw_airplane(self, screen):
+        img = pygame.image.load('img/airplane1.png')
+        img = pygame.transform.rotate(img, self.angle)
+        screen.blit(img, img.get_rect(center=(self.x, self.y)))
 
     def draw(self, screen):
 
@@ -98,9 +103,6 @@ class AirPlane(pygame.sprite.Sprite):
         self.draw_name(screen)
         self.draw_airplane(screen)
         self.draw_reload_progress(screen)
-        img = pygame.image.load('img/airplane1.png')
-        img = pygame.transform.rotate(img, self.angle)
-        screen.blit(img, img.get_rect(center=(self.x, self.y)))
 
     def fire(self):
         if self.leftBullet > 0:
@@ -133,23 +135,23 @@ class Bullet():
         self.color = color
 
     def update(self, dt):
-        self.x -= self.velocity * \
-            math.sin(math.radians(self.angle)) * dt * 0.1
-        self.y -= self.velocity * \
-            math.cos(math.radians(self.angle)) * dt * 0.1
+        self.x -= self.velocity * math.sin(math.radians(self.angle)) * dt * 0.1
+        self.y -= self.velocity * math.cos(math.radians(self.angle)) * dt * 0.1
 
         if self.x < 0 or self.x > 1280 or self.y < 0 or self.y > 720:
             self.is_alive = False
 
     def draw(self, screen):
         radians = math.radians(self.angle)
-        pygame.draw.line(screen, (10, 10, 10), (self.x + 25*math.sin(radians), self.y + 25*math.cos(radians)), (self.x + 35*math.sin(
+        pygame.draw.line(screen, (155, 155, 155), (self.x + 25*math.sin(radians), self.y + 25*math.cos(radians)), (self.x + 35*math.sin(
             radians), self.y + 35*math.cos(radians)), 3)
 
 
 class GameEngineArek():
     def __init__(self):
         pygame.init()
+        self.bg = pygame.image.load('img/bg.png')
+        self.bg = pygame.transform.scale(self.bg, (1280, 720))
         self.sprites = pygame.sprite.Group()
         self.gameObjects = {}
         self.width, self.height = 1280, 720
@@ -204,9 +206,7 @@ class GameEngineArek():
         """
 
         self.screen.fill((0, 150, 255))
-
-        # for gameObject in self.gameObjects:
-        #     gameObject.draw(self.screen)
+        self.screen.blit(self.bg, (0, 0))
         for gameObject in self.gameObjects.values():
             gameObject.draw(self.screen)
 
