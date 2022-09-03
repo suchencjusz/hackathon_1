@@ -1,14 +1,17 @@
 import math
 import random
-import time
+import time, datetime
 
 class Bot():
+    last_update = 0
+    last_update_speed = 0
+
     def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple, health: int, score: int = 0):
         self.x = x
         self.y = y
         self.width = 50
         self.height = 50
-        self.velocity = 1
+        self.velocity = 9
         self.acceleration = 0.5
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
@@ -42,12 +45,21 @@ class Bot():
         elif self.y > 720:
             self.y = 0
 
-        rand = random.randint(1,10)
-        if rand > 5:
-            if self.velocity < self.max_velocity:
-                self.velocity += self.acceleration
-        else:
-            if self.velocity > 1:
-                self.velocity -= self.acceleration
 
+
+        if datetime.datetime.now().timestamp() - self.last_update_speed > 1:
+            rand = random.randint(1,10)
+            if rand > 5:
+                if self.velocity < self.max_velocity:
+                    self.velocity += self.acceleration
+            else:
+                if self.velocity > 1:
+                    self.velocity -= self.acceleration
+
+            self.last_update_speed = datetime.datetime.now().timestamp()
+        
+        if datetime.datetime.now().timestamp() - self.last_update > 2:
+            self.turn = random.choice([-1,1])
+            self.last_update = datetime.datetime.now().timestamp()
+            
         time.sleep(0.001)
