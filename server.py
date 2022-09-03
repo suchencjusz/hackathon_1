@@ -206,7 +206,16 @@ def threaded_client(conn, _id):
             connections -= 1
             del players[current_id]
             conn.close()  # close connection
+<<<<<<< HEAD
         time.sleep(1/30)
+=======
+
+        # except Exception as e:
+        #     print(e)
+        #     break
+
+        time.sleep(0.01)
+>>>>>>> d758d08a85dde4b633587e317225f2c54ee52d84
 
 
 # MAINLOOP

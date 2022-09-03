@@ -15,7 +15,11 @@ class GameEngineArek():
         pygame.init()
         self.font = pygame.font.SysFont('arial', 16)
         self.name = "noname"
+<<<<<<< HEAD
         self.bg = pygame.image.load('img/bg.png')
+=======
+        self.bg = pygame.image.load('img/bg.jpg')
+>>>>>>> d758d08a85dde4b633587e317225f2c54ee52d84
         self.bg = pygame.transform.scale(self.bg, (1280, 720))
         self.sprites = pygame.sprite.Group()
         self.clock = pygame.time.Clock()
