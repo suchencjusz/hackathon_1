@@ -2,37 +2,32 @@ import sys
 import pygame
 from pygame.locals import *
 import math
-from datetime import datetime, timedelta
-import pygame_menu
 
+import pickle
+import select
+import socket
+
+BUFFERSIZE = 2048
+playerid = 0
+serverAddr = '127.0.0.1'
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((serverAddr, 4126))
 
 class AirPlane():
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, velocity, angle, acceleration, playerid):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
-        self.velocity = 1
-        self.acceleration = 1
-        self.angle = 30
+        self.velocity = velocity
+        self.acceleration = acceleration
+        self.angle = angle
         self.turn = 1  # -1: left, 1: right
-        self.leftBullet = 10
-        self.reloadTime = 1
         self.bullets = []
-        self.last_reload = None
-        self.is_reloading = False
+        self.playerid = playerid
 
     def update(self, dt):
-        if self.leftBullet == 0:
-
-            if not self.is_reloading:
-                self.last_reload = datetime.now()
-                self.is_reloading = True
-
-            if self.last_reload + timedelta(seconds=1) < datetime.now() and self.is_reloading:
-                self.leftBullet = 10
-                self.is_reloading = False
-
         self.angle += self.turn * 0.2 * dt
         self.x += self.velocity * \
             math.sin(math.radians(self.angle)) * dt * 0.05
@@ -51,19 +46,6 @@ class AirPlane():
         for bullet in self.bullets:
             bullet.update(dt)
 
-    def draw_bullets(self, screen):
-        for bullet in self.bullets:
-            bullet.draw(screen)
-
-    def draw_reload_progress(self, screen):
-        if self.is_reloading:
-            reload_progress = (
-                datetime.now() - self.last_reload).total_seconds() / self.reloadTime
-            pygame.draw.rect(screen, (255, 255, 255),
-                             (self.x - 20, self.y - 50, 40*reload_progress, 10))
-            pygame.draw.rect(screen, (0, 0, 0),
-                             (self.x - 20, self.y - 50, 40, 10), 1)
-
     def draw(self, screen):
         radians = math.radians(self.angle)
 
@@ -72,26 +54,24 @@ class AirPlane():
         pygame.draw.line(screen, (255, 0, 0), (self.x, self.y),
                          (self.x + 45*math.sin(radians), self.y + 45*math.cos(radians)), 2)
 
-        self.draw_bullets(screen)
-        self.draw_reload_progress(screen)
+        for bullet in self.bullets:
+            bullet.draw(screen)
 
     def fire(self):
-        if self.leftBullet != 0:
-            self.leftBullet -= 1
-            self.bullets.append(Bullet(self.x, self.y, self.angle))
+        self.bullets.append(Bullet(self.x, self.y, self.angle))
 
-    def controls(self, event):
-        if event.key == pygame.K_a:
+    def controls(self, key):
+        if key == pygame.K_a:
             self.turn = -1
-        elif event.key == pygame.K_d:
+        elif key == pygame.K_d:
             self.turn = 1
-        elif event.key == pygame.K_w:
+        elif key == pygame.K_w:
             if self.velocity < 20:
                 self.velocity += self.acceleration
-        elif event.key == pygame.K_s:
+        elif key == pygame.K_s:
             if self.velocity > 1:
                 self.velocity -= self.acceleration
-        elif event.key == pygame.K_SPACE:
+        elif key == pygame.K_SPACE:
             self.fire()
 
 
@@ -116,16 +96,10 @@ class Bullet():
         pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 5)
 
 
-class GameEngine():
-
+class GameEngineArek():
     def __init__(self):
-        pygame.init()
         self.gameObjects = []
-        self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("Arial", 18, bold=True)
-        self.width, self.height = 1280, 720
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        self.startMenu()
+        self.main()
 
     def update(self, dt):
         """
@@ -148,50 +122,53 @@ class GameEngine():
 
             if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 for gameObject in self.gameObjects:
-                    gameObject.controls(event)
+                    gameObject.controls(event.key)
 
-    def startMenu(self):
-        menu = pygame_menu.Menu('Welcome', 1280, 720,
-                                theme=pygame_menu.themes.THEME_BLUE)
-
-        menu.add.text_input('Name :', default="SiurMan Pil'ot")
-        menu.add.button('Play', self.main)
-        menu.add.button('Quit', pygame_menu.events.EXIT)
-
-        menu.mainloop(self.screen)
-
-    def fps_counter(self):
-        fps = str(int(self.clock.get_fps()))
-        fps_t = self.font.render(fps, 1, pygame.Color("RED"))
-        self.screen.blit(fps_t, (0, 0))
-
-    def draw(self):
+    def draw(self, screen):
         """
         Draw things to the window. Called once per frame.
         """
 
-        self.screen.fill((0, 150, 255))
+        screen.fill((0, 150, 255))
 
         for gameObject in self.gameObjects:
-            gameObject.draw(self.screen)
-
-        self.fps_counter()
+            gameObject.draw(screen)
 
         pygame.display.flip()
 
     def main(self):
-        self.gameObjects.append(AirPlane(700, 300, 40, 40))
+        self.gameObjects.append(AirPlane(50, 50, 40, 40, 1,30,1,0))
 
+        
+
+        pygame.init()
         fps = 60.0
+        fpsClock = pygame.time.Clock()
+
+        width, height = 1280, 720
+        screen = pygame.display.set_mode((width, height))
 
         dt = 1/fps
         while True:
-
             self.update(dt)
-            self.draw()
+            self.draw(screen)
 
-            dt = self.clock.tick(fps)
+            dt = fpsClock.tick(fps)
 
+            ins, outs, ex = select.select([s], [], [], 0)
+            for inm in ins:
+                gameEvent = pickle.loads(inm.recv(BUFFERSIZE))
+                if gameEvent[0] == 'id update':
+                    playerid = gameEvent[1]
+                    print(playerid)
+                if gameEvent[0] == 'player locations':
+                    gameEvent.pop(0)
+                    minions = []
+                    for minion in gameEvent:
+                        if minion[0] != playerid:
+                            minions.append(AirPlane(minion[1], minion[2],40,40,1,30,1,minion[0]))    
+            ge = ['position update', playerid, self.gameObjects[0].x, self.gameObjects[0].y, self.gameObjects[0].angle, self.gameObjects[0].turn, self.gameObjects[0].velocity, self.gameObjects[0].acceleration, self.gameObjects[0].bullets]
+            s.send(pickle.dumps(ge))
 
 if __name__ == '__main__':
-    GameEngine()
+    GameEngineArek()
