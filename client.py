@@ -23,9 +23,8 @@ class Network:
         :return: int reprsenting id
         """
         self.client.connect(self.addr)
-        self.client.send(str.encode(name))
-        val = self.client.recv(8)
-        return int(val.decode())  # can be int because will be an int id
+        data = self.send(name)
+        return data
 
     def disconnect(self):
         """

@@ -1,5 +1,4 @@
-from asyncio import events
-from multiprocessing.connection import Client
+from datetime import datetime, timedelta
 import sys
 import pygame
 from pygame.locals import *
@@ -16,7 +15,7 @@ from client import Network
 
 
 class AirPlane():
-    def __init__(self, x, y, angle, playerid):
+    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple):
         self.x = x
         self.y = y
         self.width = 50
@@ -27,8 +26,14 @@ class AirPlane():
         self.turn = 1  # -1: left, 1: right
         self.bullets = []
         self.playerid = playerid
+        self.leftBullet = 10
+        self.reloadTime = 1
+        self.last_reload = None
+        self.is_reloading = False
+        self.name = name
+        self.color = color
 
-    def get_position(self):
+    def get_position(self) -> str:
         return f"move {round(self.x,1)} {round(self.y,1)} {round(self.angle,1)}"
 
     def update(self, dt):
@@ -50,19 +55,53 @@ class AirPlane():
         for bullet in self.bullets:
             bullet.update(dt)
 
-    def draw(self, screen):
-        radians = math.radians(self.angle)
+        if self.leftBullet == 0:
 
-        pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), 30)
+            if not self.is_reloading:
+                self.last_reload = datetime.now()
+                self.is_reloading = True
+
+            if self.last_reload + timedelta(seconds=1) < datetime.now() and self.is_reloading:
+                self.leftBullet = 10
+                self.is_reloading = False
+
+    def draw_name(self, screen):
+
+        font = pygame.font.SysFont('arial', 16)
+        text = font.render(f"{self.name}", True, (0, 0, 0))
+        screen.blit(
+            text, text.get_rect(center=(self.x, self.y - 40)))
+
+    def draw_reload_progress(self, screen):
+        if self.is_reloading:
+            reload_progress = (
+                datetime.now() - self.last_reload).total_seconds() / self.reloadTime
+            pygame.draw.rect(screen, (255, 255, 255),
+                             (self.x - 20, self.y + 40, 40*reload_progress, 10))
+            pygame.draw.rect(screen, (0, 0, 0),
+                             (self.x - 20, self.y + 40, 40, 10), 1)
+
+    def draw_airplane(self, screen):
+        radians = math.radians(self.angle)
+        pygame.draw.circle(screen, self.color, (self.x, self.y), 25)
 
         pygame.draw.line(screen, (255, 0, 0), (self.x, self.y),
-                         (self.x + 45*math.sin(radians), self.y + 45*math.cos(radians)), 2)
+                         (self.x + 45*math.sin(radians), self.y + 45*math.cos(radians)), 3)
+
+    def draw(self, screen):
 
         for bullet in self.bullets:
             bullet.draw(screen)
 
+        self.draw_name(screen)
+        self.draw_airplane(screen)
+        self.draw_reload_progress(screen)
+
     def fire(self):
-        self.bullets.append(Bullet(self.x, self.y, self.angle))
+        if self.leftBullet > 0:
+            self.leftBullet -= 1
+            self.bullets.append(
+                Bullet(self.x, self.y, self.angle, self.color))
 
     def controls(self, key):
         if key == pygame.K_a:
@@ -80,12 +119,13 @@ class AirPlane():
 
 
 class Bullet():
-    def __init__(self, x, y, angle) -> None:
+    def __init__(self, x: float, y: float, angle: float, color: tuple) -> None:
         self.x = x
         self.y = y
-        self.velocity = 4
+        self.velocity = 6
         self.angle = angle
         self.is_alive = False
+        self.color = color
 
     def update(self, dt):
         self.x += self.velocity * \
@@ -97,7 +137,8 @@ class Bullet():
             self.is_alive = False
 
     def draw(self, screen):
-        pygame.draw.circle(screen, (0, 0, 0), (self.x, self.y), 5)
+        pygame.draw.line(screen, (0, 0, 0), (self.x, self.y), (self.x + 10*math.sin(
+            math.radians(self.angle)), self.y + 10*math.cos(math.radians(self.angle))), 3)
 
 
 class GameEngineArek():
@@ -166,22 +207,27 @@ class GameEngineArek():
 
     def main(self):
         client = Network()
-        self.my_id = client.connect(self.name)
+        server_data = client.connect(self.name)
 
+        self.my_id = server_data['id']
         self.gameObjects[self.my_id] = AirPlane(
-            50, 50, 90, self.my_id)
+            server_data["x"], server_data["y"], server_data["angle"], server_data["id"], self.name, server_data["color"])
 
         fps = 60.0
         fpsClock = pygame.time.Clock()
 
         dt = 1/fps
         while True:
+            for k in self.gameObjects.copy().keys():
+                if k != self.my_id:
+                    del self.gameObjects[k]
+
             players = client.send(self.gameObjects[self.my_id].get_position())
             # print(players.values())
             for player_id, player_data in players.items():
                 if player_id != self.my_id:
                     self.gameObjects[player_id] = AirPlane(
-                        player_data["x"], player_data["y"], player_data["angle"], player_id)
+                        player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"])
 
             self.update(dt)
             self.draw()

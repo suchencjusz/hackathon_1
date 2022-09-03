@@ -48,7 +48,7 @@ players = {}
 balls = []
 connections = 0
 _id = 0
-colors = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 128), (0, 255, 255),
+colors = [(255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 128), (0, 255, 255),
           (0, 128, 255), (0, 0, 255), (0, 0, 255), (128, 0, 255), (255, 0, 255), (255, 0, 128), (128, 128, 128), (0, 0, 0)]
 start = False
 stat_time = 0
@@ -182,22 +182,22 @@ def threaded_client(conn, _id):
     # Setup properties for each new player
     color = colors[current_id]
     x, y = get_start_location(players)
-    players[current_id] = {"x": x, "y": y, "color": color,
-                           "score": 0, "name": name}  # x, y color, score, name
+    angle = random.randint(0, 360)
+    players[current_id] = {"x": x, "y": y, "color": color, "score": 0,
+                           "name": name, "angle": angle, "id": current_id}  # x, y color, score, name
 
     # pickle data and send initial info to clients
-    conn.send(str.encode(str(current_id)))
+    conn.send(pickle.dumps((players[current_id])))
 
     # server will recieve basic commands from client
     # it will send back all of the other clients info
     '''
 	commands start with:
 	move
-	jump
 	get
 	id - returns id of client
 	'''
-    send_data = str.encode("1")
+    # send_data = str.encode("1")
     while True:
 
         if start:
