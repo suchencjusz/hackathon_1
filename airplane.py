@@ -27,13 +27,6 @@ class Airplane(pygame.sprite.Sprite):
         self.health = health
         self.score = score
 
-    def set_position(self, x, y, angle):
-        self.x = x
-        self.y = y
-
-    def set_score(self, score):
-        self.score = score
-
     def set_health(self, health):
         self.health = health
 

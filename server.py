@@ -63,12 +63,8 @@ def get_start_location(players):
     return (x, y)
 
 
-FLAG = False
-
-
-def check_collision(conn):
-    global players, FLAG
-    FLAG = False
+def check_collision():
+    global players
     for player in players:
         for bullet in players[player]['bullets']:
             for player2 in players:
@@ -77,12 +73,6 @@ def check_collision(conn):
                         print("[COLLISION]", players[player]['name'],
                               "hit", players[player2]['name'])
                         players[player2]['health'] -= 5
-                        if players[player2]['health'] <= 0:
-                            players[player]['score'] += 1
-                            players[player2]['x'], players[player2]['y'] = get_start_location(
-                                players)
-                            players[player2]['health'] = 100
-
                         break
 
 def threaded_bot(_id):
@@ -149,6 +139,7 @@ def threaded_client(conn, _id):
     # send_data = str.encode("1")
     while True:
         # try:
+        # Recieve data from client
         data = conn.recv(1024)
 
         # print(data)
@@ -182,7 +173,9 @@ def threaded_client(conn, _id):
             players[current_id]["y"] = y
             players[current_id]["health"] = health
 
-            check_collision(conn)
+            check_collision()
+
+            send_data = pickle.dumps((players))
 
         elif data.split(" ")[0] == "id":
             send_data = str.encode(str(current_id))
