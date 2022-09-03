@@ -3,6 +3,7 @@ import pygame
 from pygame.locals import *
 import math
 from datetime import datetime, timedelta
+import pygame_menu
 
 
 class AirPlane():
@@ -122,7 +123,9 @@ class GameEngine():
         self.gameObjects = []
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Arial", 18, bold=True)
-        self.main()
+        self.width, self.height = 1280, 720
+        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.startMenu()
 
     def update(self, dt):
         """
@@ -147,22 +150,32 @@ class GameEngine():
                 for gameObject in self.gameObjects:
                     gameObject.controls(event)
 
-    def fps_counter(self, screen):
+    def startMenu(self):
+        menu = pygame_menu.Menu('Welcome', 1280, 720,
+                                theme=pygame_menu.themes.THEME_BLUE)
+
+        menu.add.text_input('Name :', default="SiurMan Pil'ot")
+        menu.add.button('Play', self.main)
+        menu.add.button('Quit', pygame_menu.events.EXIT)
+
+        menu.mainloop(self.screen)
+
+    def fps_counter(self):
         fps = str(int(self.clock.get_fps()))
         fps_t = self.font.render(fps, 1, pygame.Color("RED"))
-        screen.blit(fps_t, (0, 0))
+        self.screen.blit(fps_t, (0, 0))
 
-    def draw(self, screen):
+    def draw(self):
         """
         Draw things to the window. Called once per frame.
         """
 
-        screen.fill((0, 150, 255))
+        self.screen.fill((0, 150, 255))
 
         for gameObject in self.gameObjects:
-            gameObject.draw(screen)
+            gameObject.draw(self.screen)
 
-        self.fps_counter(screen)
+        self.fps_counter()
 
         pygame.display.flip()
 
@@ -170,13 +183,12 @@ class GameEngine():
         self.gameObjects.append(AirPlane(700, 300, 40, 40))
 
         fps = 60.0
-        width, height = 1280, 720
-        screen = pygame.display.set_mode((width, height))
 
         dt = 1/fps
         while True:
+
             self.update(dt)
-            self.draw(screen)
+            self.draw()
 
             dt = self.clock.tick(fps)
 
