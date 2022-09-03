@@ -11,6 +11,7 @@ import time
 import random
 import math
 import os
+from bot import Bot
 
 # setup sockets
 S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,6 +84,32 @@ def check_collision(conn):
                             players[player2]['health'] = 100
 
                         break
+
+def threaded_bot(_id):
+    """
+    creates a thread for the bot
+    :param _id: int
+    :return: None
+    """
+    global connections, players, balls, game_time, nxt, start
+
+    current_id = _id
+
+    print("[LOG]", str(_id)+"-bot spawned.")
+
+    bt = Bot(300,300,30,_id,"bot(but)",colors[1],100)
+
+    players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color, "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id}
+
+    while True:
+        bt.update()
+
+        players[current_id]["angle"] = bt.angle
+        players[current_id]["x"] = bt.x
+        players[current_id]["y"] = bt.y
+        players[current_id]["score"] = bt.score
+        players[current_id]["health"] = bt.health
+        players[current_id]["bullets"] = bt.bullets
 
 
 def threaded_client(conn, _id):
@@ -191,6 +218,9 @@ def threaded_client(conn, _id):
 # MAINLOOP
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")
+
+start_new_thread(threaded_bot, (5,))
+# _id += 1
 
 # Keep looping to accept new connections
 while True:
