@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from re import I
 import sys
 import pygame
 from pygame.locals import *
@@ -14,14 +15,14 @@ from client import Network
 # s.connect((serverAddr, 4126))
 
 
-class AirPlane():
+class AirPlane(pygame.sprite.Sprite):
     def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple):
         self.x = x
         self.y = y
         self.width = 50
         self.height = 50
         self.velocity = 1
-        self.acceleration = 1
+        self.acceleration = 0.1
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
         self.bullets = []
@@ -32,15 +33,16 @@ class AirPlane():
         self.is_reloading = False
         self.name = name
         self.color = color
+        self.max_velocity = 12
 
     def get_position(self) -> str:
         return f"move {round(self.x,1)} {round(self.y,1)} {round(self.angle,1)}"
 
     def update(self, dt):
         self.angle += self.turn * 0.2 * dt
-        self.x += self.velocity * \
+        self.x -= self.velocity * \
             math.sin(math.radians(self.angle)) * dt * 0.05
-        self.y += self.velocity * \
+        self.y -= self.velocity * \
             math.cos(math.radians(self.angle)) * dt * 0.05
 
         if self.x < 0:
@@ -96,6 +98,9 @@ class AirPlane():
         self.draw_name(screen)
         self.draw_airplane(screen)
         self.draw_reload_progress(screen)
+        img = pygame.image.load('img/airplane1.png')
+        img = pygame.transform.rotate(img, self.angle)
+        screen.blit(img, img.get_rect(center=(self.x, self.y)))
 
     def fire(self):
         if self.leftBullet > 0:
@@ -109,7 +114,7 @@ class AirPlane():
         elif key == pygame.K_d:
             self.turn = 1
         elif key == pygame.K_w:
-            if self.velocity < 20:
+            if self.velocity < self.max_velocity:
                 self.velocity += self.acceleration
         elif key == pygame.K_s:
             if self.velocity > 1:
@@ -122,28 +127,30 @@ class Bullet():
     def __init__(self, x: float, y: float, angle: float, color: tuple) -> None:
         self.x = x
         self.y = y
-        self.velocity = 6
+        self.velocity = 8
         self.angle = angle
         self.is_alive = False
         self.color = color
 
     def update(self, dt):
-        self.x += self.velocity * \
+        self.x -= self.velocity * \
             math.sin(math.radians(self.angle)) * dt * 0.1
-        self.y += self.velocity * \
+        self.y -= self.velocity * \
             math.cos(math.radians(self.angle)) * dt * 0.1
 
         if self.x < 0 or self.x > 1280 or self.y < 0 or self.y > 720:
             self.is_alive = False
 
     def draw(self, screen):
-        pygame.draw.line(screen, (0, 0, 0), (self.x, self.y), (self.x + 10*math.sin(
-            math.radians(self.angle)), self.y + 10*math.cos(math.radians(self.angle))), 3)
+        radians = math.radians(self.angle)
+        pygame.draw.line(screen, (10, 10, 10), (self.x + 25*math.sin(radians), self.y + 25*math.cos(radians)), (self.x + 35*math.sin(
+            radians), self.y + 35*math.cos(radians)), 3)
 
 
 class GameEngineArek():
     def __init__(self):
         pygame.init()
+        self.sprites = pygame.sprite.Group()
         self.gameObjects = {}
         self.width, self.height = 1280, 720
         self.screen = pygame.display.set_mode((self.width, self.height))
