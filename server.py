@@ -63,12 +63,8 @@ def get_start_location(players):
     return (x, y)
 
 
-FLAG = False
-
-
 def check_collision(conn):
-    global players, FLAG
-    FLAG = False
+    global players
     for player in players:
         for bullet in players[player]['bullets']:
             for player2 in players:
@@ -76,14 +72,14 @@ def check_collision(conn):
                     if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 40:
                         print("[COLLISION]", players[player]['name'],
                               "hit", players[player2]['name'])
-                        players[player2]['health'] -= 5
+                        players[player2]['health'] -= 25
                         if players[player2]['health'] <= 0:
                             players[player]['score'] += 1
+                            players[player2]['health'] = 100
                             players[player2]['x'], players[player2]['y'] = get_start_location(
                                 players)
-                            players[player2]['health'] = 100
-
                         break
+
 
 def threaded_bot(_id):
     """
@@ -97,9 +93,10 @@ def threaded_bot(_id):
 
     print("[LOG]", str(_id)+"-bot spawned.")
 
-    bt = Bot(300,300,30,_id,"bot(but)",colors[1],100)
+    bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 100)
 
-    players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color, "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id}
+    players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color,
+                           "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id}
 
     while True:
         bt.update()
@@ -124,7 +121,7 @@ def threaded_client(conn, _id):
     current_id = _id
 
     # recieve a name from the client
-    data = conn.recv(16)
+    data = conn.recv(128)
     name = data.decode("utf-8")
     print("[LOG]", name, "connected to the server.")
 
@@ -149,6 +146,7 @@ def threaded_client(conn, _id):
     # send_data = str.encode("1")
     while True:
         # try:
+        # Recieve data from client
         data = conn.recv(1024)
 
         # print(data)
@@ -184,6 +182,8 @@ def threaded_client(conn, _id):
 
             check_collision(conn)
 
+            send_data = pickle.dumps((players))
+
         elif data.split(" ")[0] == "id":
             send_data = str.encode(str(current_id))
         else:
@@ -204,15 +204,9 @@ def threaded_client(conn, _id):
                   ", Client Id:", current_id, "disconnected")
 
             connections -= 1
-            # remove client information from players list
             del players[current_id]
             conn.close()  # close connection
-
-        # except Exception as e:
-        #     print(e)
-        #     break
-
-        time.sleep(0.001)
+        time.sleep(1/30)
 
 
 # MAINLOOP

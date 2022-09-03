@@ -14,6 +14,7 @@ class GameEngineArek():
     def __init__(self):
         pygame.init()
         self.font = pygame.font.SysFont('arial', 16)
+        self.name = "noname"
         self.bg = pygame.image.load('img/bg.png')
         self.bg = pygame.transform.scale(self.bg, (1280, 720))
         self.sprites = pygame.sprite.Group()
@@ -31,7 +32,9 @@ class GameEngineArek():
         dt is the amount of time passed since last frame.
         If you want to have constant apparent movement no matter your framerate,
         what you can do is something like
+
         x += v * dt
+
         and this will scale your velocity based on time. Extend as necessary."""
 
         self.gameObjects[self.my_id].update(dt)
@@ -84,9 +87,12 @@ class GameEngineArek():
         pygame.display.flip()
 
     def main(self):
+        prev_bullet_count = 0
+        cur_bullet_count = 0
         client = Network()
         server_data = client.connect(self.name)
-        max_fps = 60.0
+
+        max_fps = 30.0
 
         self.my_id = server_data['id']
         self.gameObjects[self.my_id] = Airplane(
@@ -104,14 +110,25 @@ class GameEngineArek():
                 if player_id == self.my_id:
                     self.gameObjects[self.my_id].set_health(
                         player_data["health"])
+                    self.gameObjects[self.my_id].set_score(
+                        int(player_data["score"]/2))
+                    self.gameObjects[self.my_id].set_position(
+                        player_data["x"], player_data["y"])
                 else:
                     self.gameObjects[player_id] = Airplane(
                         player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"], player_data['health'], player_data['score'])
 
-                    # print(player_data['bullets'])
                     for bullet in player_data['bullets']:
+                        cur_bullet_count += 1
                         self.gameObjects[player_id].create_bullet(
                             bullet['x'], bullet['y'], bullet['angle'], player_id)
+            if cur_bullet_count > prev_bullet_count:
+                for _ in range(cur_bullet_count - prev_bullet_count):
+                    pygame.mixer.Sound.play(
+                        pygame.mixer.Sound('sound/fire.mp3'))
+
+                prev_bullet_count = cur_bullet_count
+                cur_bullet_count = 0
 
             self.update(dt)
             self.draw()

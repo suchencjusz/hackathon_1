@@ -27,7 +27,7 @@ class Airplane(pygame.sprite.Sprite):
         self.health = health
         self.score = score
 
-    def set_position(self, x, y, angle):
+    def set_position(self, x, y):
         self.x = x
         self.y = y
 
@@ -122,6 +122,7 @@ class Airplane(pygame.sprite.Sprite):
 
     def fire(self):
         if self.leftBullet > 0:
+            pygame.mixer.Sound.play(pygame.mixer.Sound('sound/fire.mp3'))
             self.leftBullet -= 1
             self.bullets.append(
                 Bullet(self.x, self.y, self.angle, self.playerid))
