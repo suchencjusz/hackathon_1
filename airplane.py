@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 
 class Airplane(pygame.sprite.Sprite):
-    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple):
+    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple, health: int, score: int = 0):
         self.x = x
         self.y = y
         self.width = 50
@@ -24,6 +24,11 @@ class Airplane(pygame.sprite.Sprite):
         self.color = color
         self.max_velocity = 12
         self.bullets = []
+        self.health = health
+        self.score = score
+
+    def set_health(self, health):
+        self.health = health
 
     def create_bullet(self, x, y, angle, owner_id):
         self.bullets.append(Bullet(x, y, angle, owner_id))
@@ -32,7 +37,7 @@ class Airplane(pygame.sprite.Sprite):
         bullet_data = ""
         for bullet in self.bullets:
             bullet_data += bullet.get_position()
-        return f'move {round(self.x, 1)} {round(self.y, 1)} {round(self.angle, 1)} {bullet_data}'
+        return f'move {round(self.x, 1)} {round(self.y, 1)} {round(self.angle, 1)} {self.health} {bullet_data}'
 
     def update(self, dt):
         self.angle += self.turn * 0.2 * dt
@@ -65,12 +70,17 @@ class Airplane(pygame.sprite.Sprite):
                 self.leftBullet = 10
                 self.is_reloading = False
 
+    def draw_health_bar(self, screen):
+        pygame.draw.rect(screen, (0, 0, 0), (self.x - 25, self.y - 50, 50, 6))
+        pygame.draw.rect(screen, (0, 255, 0), (self.x - 25,
+                         self.y - 50, self.health/2, 5))
+
     def draw_name(self, screen):
 
-        font = pygame.font.SysFont('arial', 16)
+        font = pygame.font.SysFont('arial', 18)
         text = font.render(f"{self.name}", True, (255, 255, 255))
         screen.blit(
-            text, text.get_rect(center=(self.x, self.y - 40)))
+            text, text.get_rect(center=(self.x, self.y - 60)))
 
     def draw_reload_progress(self, screen):
         if self.is_reloading:
@@ -95,6 +105,7 @@ class Airplane(pygame.sprite.Sprite):
 
     def draw(self, screen):
 
+        self.draw_health_bar(screen)
         self.draw_name(screen)
         self.draw_airplane(screen)
         self.draw_reload_progress(screen)

@@ -3,6 +3,7 @@ main server script for running agar.io server
 can handle multiple/infinite connections on the same
 local network
 """
+from calendar import c
 import socket
 from _thread import *
 import pickle
@@ -18,13 +19,6 @@ S.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # Set constants
 os.system("fuser 5555/tcp -k")
 PORT = 5555
-
-BALL_RADIUS = 5
-START_RADIUS = 7
-
-ROUND_TIME = 60 * 5
-
-MASS_LOSS_TIME = 7
 
 W, H = 1600, 830
 
@@ -63,19 +57,22 @@ def get_start_location(players):
     :param players: dict
     :return: tuple (x,y)
     """
-    while True:
-        stop = True
-        x = random.randrange(0, W)
-        y = random.randrange(0, H)
-        for player in players:
-            p = players[player]
-            dis = math.sqrt((x - p["x"])**2 + (y-p["y"])**2)
-            if dis <= START_RADIUS + p["score"]:
-                stop = False
-                break
-        if stop:
-            break
+    x = random.randrange(0, W)
+    y = random.randrange(0, H)
     return (x, y)
+
+
+def check_collision():
+    global players
+    for player in players:
+        for bullet in players[player]['bullets']:
+            for player2 in players:
+                if player != player2:
+                    if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 40:
+                        print("[COLLISION]", players[player]['name'],
+                              "hit", players[player2]['name'])
+                        players[player2]['health'] -= 5
+                        break
 
 
 def threaded_client(conn, _id):
@@ -114,17 +111,8 @@ def threaded_client(conn, _id):
 	'''
     # send_data = str.encode("1")
     while True:
-
-        if start:
-            game_time = round(time.time()-start_time)
-            # if the game time passes the round time the game will stop
-            if game_time >= ROUND_TIME:
-                start = False
-            else:
-                if game_time // MASS_LOSS_TIME == nxt:
-                    nxt += 1
         # try:
-            # Recieve data from client
+        # Recieve data from client
         data = conn.recv(1024)
 
         # print(data)
@@ -138,8 +126,9 @@ def threaded_client(conn, _id):
             x = float(split_data[1])
             y = float(split_data[2])
             angle = float(split_data[3])
+            health = float(split_data[4])
             try:
-                bullets_data = split_data[4:]
+                bullets_data = split_data[5:]
                 players[current_id]['bullets'] = []
                 dct = {}
                 for bullet in bullets_data:
@@ -155,17 +144,35 @@ def threaded_client(conn, _id):
             players[current_id]["angle"] = angle
             players[current_id]["x"] = x
             players[current_id]["y"] = y
+            players[current_id]["health"] = health
+
+            check_collision()
+
             send_data = pickle.dumps((players))
 
         elif data.split(" ")[0] == "id":
             send_data = str.encode(str(current_id))
-
         else:
-            # any other command just send back list of players
-            send_data = str.encode(str(current_id))
+
+            print("[DISCONNECT] Name:", name,
+                  ", Client Id:", current_id, "disconnected")
+
+            connections -= 1
+            # remove client information from players list
+            del players[current_id]
+            conn.close()  # close connection
 
             # send data back to clients
-        conn.send(send_data)
+        try:
+            conn.send(send_data)
+        except Exception as e:
+            print("[DISCONNECT] Name:", name,
+                  ", Client Id:", current_id, "disconnected")
+
+            connections -= 1
+            # remove client information from players list
+            del players[current_id]
+            conn.close()  # close connection
 
         # except Exception as e:
         #     print(e)
@@ -173,17 +180,8 @@ def threaded_client(conn, _id):
 
         time.sleep(0.001)
 
-    # When user disconnects
-    print("[DISCONNECT] Name:", name,
-          ", Client Id:", current_id, "disconnected")
-
-    connections -= 1
-    del players[current_id]  # remove client information from players list
-    conn.close()  # close connection
-
 
 # MAINLOOP
-
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")
 

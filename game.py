@@ -65,12 +65,20 @@ class GameEngineArek():
         fps_t = self.font.render(fps, 1, pygame.Color("RED"))
         self.screen.blit(fps_t, (0, 0))
 
+    def draw_leaderboard(self):
+        # self.font.render("Leaderboard", 1, pygame.Color("WHITE"))
+        # self.screen.blit(self.font, (1200, 50))
+        font = pygame.font.SysFont('arial', 19)
+        for i, gameobject in enumerate(self.gameObjects.values()):
+            self.screen.blit(font.render(gameobject.name + " : " + str(
+                gameobject.score) + " kills ", 1, pygame.Color("WHITE")), (1050, 50 + i * 20))
+
     def draw(self):
         """
         Draw things to the window. Called once per frame.
         """
-
         self.screen.blit(self.bg, (0, 0))
+        self.draw_leaderboard()
         self.fps_counter()
         for gameObject in self.gameObjects.values():
             gameObject.draw(self.screen)
@@ -84,7 +92,7 @@ class GameEngineArek():
 
         self.my_id = server_data['id']
         self.gameObjects[self.my_id] = Airplane(
-            server_data["x"], server_data["y"], server_data["angle"], server_data["id"], self.name, server_data["color"])
+            server_data["x"], server_data["y"], server_data["angle"], server_data["id"], self.name, server_data["color"], 100)
 
         dt = 1/max_fps
         while True:
@@ -95,9 +103,12 @@ class GameEngineArek():
             players = client.send(
                 self.gameObjects[self.my_id].get_position())
             for player_id, player_data in players.items():
-                if player_id != self.my_id:
+                if player_id == self.my_id:
+                    self.gameObjects[self.my_id].set_health(
+                        player_data["health"])
+                else:
                     self.gameObjects[player_id] = Airplane(
-                        player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"])
+                        player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"], player_data['health'], player_data['score'])
 
                     # print(player_data['bullets'])
                     for bullet in player_data['bullets']:
