@@ -31,9 +31,7 @@ class GameEngineArek():
         dt is the amount of time passed since last frame.
         If you want to have constant apparent movement no matter your framerate,
         what you can do is something like
-
         x += v * dt
-
         and this will scale your velocity based on time. Extend as necessary."""
 
         self.gameObjects[self.my_id].update(dt)
