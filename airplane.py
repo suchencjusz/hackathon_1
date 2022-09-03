@@ -2,6 +2,8 @@ import pygame
 import math
 from datetime import datetime, timedelta
 
+# bullets = {}
+
 
 class Airplane(pygame.sprite.Sprite):
     def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple):
@@ -13,7 +15,6 @@ class Airplane(pygame.sprite.Sprite):
         self.acceleration = 0.5
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
-        self.bullets = []
         self.playerid = playerid
         self.leftBullet = 10
         self.reloadTime = 1
@@ -22,16 +23,28 @@ class Airplane(pygame.sprite.Sprite):
         self.name = name
         self.color = color
         self.max_velocity = 12
+        self.bullets = []
 
-    def get_position(self) -> str:
-        return f"move {round(self.x,1)} {round(self.y,1)} {round(self.angle,1)}"
+    def create_bullet(self, x, y, angle, owner_id):
+        self.bullets.append(Bullet(x, y, angle, owner_id))
+
+    def get_position(self) -> dict:
+        bullet_data = ""
+        for bullet in self.bullets:
+            bullet_data += bullet.get_position()
+        return f'move {round(self.x, 1)} {round(self.y, 1)} {round(self.angle, 1)} {bullet_data}'
 
     def update(self, dt):
         self.angle += self.turn * 0.2 * dt
         self.x -= self.velocity * \
-            math.sin(math.radians(self.angle)) * dt * 0.05
+            math.sin(math.radians(self.angle)) * dt * 0.03
         self.y -= self.velocity * \
-            math.cos(math.radians(self.angle)) * dt * 0.05
+            math.cos(math.radians(self.angle)) * dt * 0.03
+
+        for bullet in self.bullets:
+            bullet.update(dt)
+            if not bullet.is_alive:
+                del self.bullets[self.bullets.index(bullet)]
 
         if self.x < 0:
             self.x = 1280
@@ -41,9 +54,6 @@ class Airplane(pygame.sprite.Sprite):
             self.y = 720
         elif self.y > 720:
             self.y = 0
-
-        for bullet in self.bullets:
-            bullet.update(dt)
 
         if self.leftBullet == 0:
 
@@ -85,18 +95,18 @@ class Airplane(pygame.sprite.Sprite):
 
     def draw(self, screen):
 
-        for bullet in self.bullets:
-            bullet.draw(screen)
-
         self.draw_name(screen)
         self.draw_airplane(screen)
         self.draw_reload_progress(screen)
+
+        for bullet in self.bullets:
+            bullet.draw(screen)
 
     def fire(self):
         if self.leftBullet > 0:
             self.leftBullet -= 1
             self.bullets.append(
-                Bullet(self.x, self.y, self.angle, self.color))
+                Bullet(self.x, self.y, self.angle, self.playerid))
 
     def controls(self, key):
         if key == pygame.K_a:
@@ -114,13 +124,13 @@ class Airplane(pygame.sprite.Sprite):
 
 
 class Bullet():
-    def __init__(self, x: float, y: float, angle: float, color: tuple) -> None:
+    def __init__(self, x: float, y: float, angle: float,  owner_id: int) -> None:
         self.x = x
         self.y = y
         self.velocity = 8
         self.angle = angle
-        self.is_alive = False
-        self.color = color
+        self.is_alive = True
+        self.owner_id = owner_id
 
     def update(self, dt):
         self.x -= self.velocity * math.sin(math.radians(self.angle)) * dt * 0.1
@@ -133,3 +143,6 @@ class Bullet():
         radians = math.radians(self.angle)
         pygame.draw.line(screen, (155, 155, 155), (self.x + 25*math.sin(radians), self.y + 25*math.cos(radians)), (self.x + 35*math.sin(
             radians), self.y + 35*math.cos(radians)), 3)
+
+    def get_position(self):
+        return f'{round(self.x, 1)},{round(self.y, 1)},{round(self.angle, 1)} '

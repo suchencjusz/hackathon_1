@@ -12,6 +12,7 @@ class Network:
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.settimeout(10.0)
+        # self.host = "178.128.199.77"
         self.host = "127.0.0.1"
         self.port = 5555
         self.addr = (self.host, self.port)
@@ -40,6 +41,7 @@ class Network:
         :param pick: boolean if should pickle or not
         :return: str
         """
+
         try:
             if pick:
                 self.client.send(pickle.dumps(data))

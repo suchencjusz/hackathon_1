@@ -29,7 +29,7 @@ MASS_LOSS_TIME = 7
 W, H = 1600, 830
 
 HOST_NAME = socket.gethostname()
-SERVER_IP = "0.0.0.0"
+SERVER_IP = "127.0.0.1"
 
 # try to connect to server
 try:
@@ -54,91 +54,6 @@ start = False
 stat_time = 0
 game_time = "Starting Soon"
 nxt = 1
-
-
-# FUNCTIONS
-
-def release_mass(players):
-    """
-    releases the mass of players
-    :param players: dict
-    :return: None
-    """
-    for player in players:
-        p = players[player]
-        if p["score"] > 8:
-            p["score"] = math.floor(p["score"]*0.95)
-
-
-def check_collision(players, balls):
-    """
-    checks if any of the player have collided with any of the balls
-    :param players: a dictonary of players
-    :param balls: a list of balls
-    :return: None
-    """
-    to_delete = []
-    for player in players:
-        p = players[player]
-        x = p["x"]
-        y = p["y"]
-        for ball in balls:
-            bx = ball[0]
-            by = ball[1]
-
-            dis = math.sqrt((x - bx)**2 + (y-by)**2)
-            if dis <= START_RADIUS + p["score"]:
-                p["score"] = p["score"] + 0.5
-                balls.remove(ball)
-
-
-def player_collision(players):
-    """
-    checks for player collision and handles that collision
-    :param players: dict
-    :return: None
-    """
-    sort_players = sorted(players, key=lambda x: players[x]["score"])
-    for x, player1 in enumerate(sort_players):
-        for player2 in sort_players[x+1:]:
-            p1x = players[player1]["x"]
-            p1y = players[player1]["y"]
-
-            p2x = players[player2]["x"]
-            p2y = players[player2]["y"]
-
-            dis = math.sqrt((p1x - p2x)**2 + (p1y-p2y)**2)
-            if dis < players[player2]["score"] - players[player1]["score"]*0.85:
-                players[player2]["score"] = math.sqrt(
-                    players[player2]["score"]**2 + players[player1]["score"]**2)  # adding areas instead of radii
-                players[player1]["score"] = 0
-                players[player1]["x"], players[player1]["y"] = get_start_location(
-                    players)
-                print(f"[GAME] " + players[player2]["name"] +
-                      " ATE " + players[player1]["name"])
-
-
-def create_balls(balls, n):
-    """
-    creates orbs/balls on the screen
-    :param balls: a list to add balls/orbs to
-    :param n: the amount of balls to make
-    :return: None
-    """
-    for i in range(n):
-        while True:
-            stop = True
-            x = random.randrange(0, W)
-            y = random.randrange(0, H)
-            for player in players:
-                p = players[player]
-                dis = math.sqrt((x - p["x"])**2 + (y-p["y"])**2)
-                if dis <= START_RADIUS + p["score"]:
-                    stop = False
-            if stop:
-                break
-
-        balls.append((x, y, random.choice(colors)))
 
 
 def get_start_location(players):
@@ -208,27 +123,35 @@ def threaded_client(conn, _id):
             else:
                 if game_time // MASS_LOSS_TIME == nxt:
                     nxt += 1
-                    release_mass(players)
-                    print(f"[GAME] {name}'s Mass depleting")
         # try:
             # Recieve data from client
-        data = conn.recv(64)
+        data = conn.recv(1024)
 
-        if not data:
-            break
-
-        data = data.decode("utf-8")
         # print(data)
         #print("[DATA] Recieved", data, "from client id:", current_id)
+        data = data.decode("utf-8")
 
         # look for specific commands from recieved data
-
         if data.split(" ")[0] == "move":
             split_data = data.split(" ")
+            players[current_id]['bullets'] = []
             x = float(split_data[1])
             y = float(split_data[2])
             angle = float(split_data[3])
-            # print(split_data)
+            try:
+                bullets_data = split_data[4:]
+                players[current_id]['bullets'] = []
+                dct = {}
+                for bullet in bullets_data:
+                    temp = bullet.split(",")
+                    x_b = float(temp[0])
+                    y_b = float(temp[1])
+                    angle_b = float(temp[2])
+                    dct = {"x": x_b, "y": y_b, "angle": angle_b}
+                    players[current_id]["bullets"].append(dct)
+            except Exception as e:
+                pass
+
             players[current_id]["angle"] = angle
             players[current_id]["x"] = x
             players[current_id]["y"] = y
@@ -260,9 +183,6 @@ def threaded_client(conn, _id):
 
 
 # MAINLOOP
-
-# setup level with balls
-create_balls(balls, random.randrange(200, 250))
 
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")

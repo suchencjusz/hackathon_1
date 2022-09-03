@@ -3,10 +3,11 @@ from re import I
 import sys
 import pygame
 from pygame.locals import *
-import math
 import pygame_menu
 from client import Network
-from hackathon_1.airplane import Airplane
+from airplane import Airplane
+
+BULLETS = {}
 
 
 class GameEngineArek():
@@ -91,11 +92,17 @@ class GameEngineArek():
                 if k != self.my_id:
                     del self.gameObjects[k]
 
-            players = client.send(self.gameObjects[self.my_id].get_position())
+            players = client.send(
+                self.gameObjects[self.my_id].get_position())
             for player_id, player_data in players.items():
                 if player_id != self.my_id:
                     self.gameObjects[player_id] = Airplane(
                         player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"])
+
+                    # print(player_data['bullets'])
+                    for bullet in player_data['bullets']:
+                        self.gameObjects[player_id].create_bullet(
+                            bullet['x'], bullet['y'], bullet['angle'], player_id)
 
             self.update(dt)
             self.draw()
