@@ -12,7 +12,7 @@ class Network:
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.settimeout(10.0)
         # self.host = "67.207.73.42"
-        self.host = "64.225.80.15"
+        self.host = "0.0.0.0"
         self.port = 5555
         self.addr = (self.host, self.port)
 
