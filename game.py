@@ -1,31 +1,35 @@
+from asyncio import events
+from multiprocessing.connection import Client
 import sys
 import pygame
 from pygame.locals import *
 import math
+import pygame_menu
+from client import Network
 
-import pickle
-import select
-import socket
+# BUFFERSIZE = 2048
+# playerid = 0
+# serverAddr = '127.0.0.1'
 
-BUFFERSIZE = 2048
-playerid = 0
-serverAddr = '127.0.0.1'
+# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# s.connect((serverAddr, 4126))
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((serverAddr, 4126))
 
 class AirPlane():
-    def __init__(self, x, y, width, height, velocity, angle, acceleration, playerid):
+    def __init__(self, x, y, angle, playerid):
         self.x = x
         self.y = y
-        self.width = width
-        self.height = height
-        self.velocity = velocity
-        self.acceleration = acceleration
+        self.width = 50
+        self.height = 50
+        self.velocity = 1
+        self.acceleration = 1
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
         self.bullets = []
         self.playerid = playerid
+
+    def get_position(self):
+        return f"move {round(self.x,1)} {round(self.y,1)} {round(self.angle,1)}"
 
     def update(self, dt):
         self.angle += self.turn * 0.2 * dt
@@ -98,7 +102,12 @@ class Bullet():
 
 class GameEngineArek():
     def __init__(self):
-        self.gameObjects = []
+        pygame.init()
+        self.gameObjects = {}
+        self.width, self.height = 1280, 720
+        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.menu()
+
         self.main()
 
     def update(self, dt):
@@ -112,8 +121,7 @@ class GameEngineArek():
 
         and this will scale your velocity based on time. Extend as necessary."""
 
-        for gameObject in self.gameObjects:
-            gameObject.update(dt)
+        self.gameObjects[self.my_id].update(dt)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -121,54 +129,65 @@ class GameEngineArek():
                 sys.exit()
 
             if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-                for gameObject in self.gameObjects:
-                    gameObject.controls(event.key)
+                self.gameObjects[self.my_id].controls(event.key)
 
-    def draw(self, screen):
+    def get_name(self, name):
+        self.name = name
+
+    # def menu_event_loop(self):
+    #     if self.menu.is_enabled():
+    #         self.menu.update(events)
+    #         self.menu.draw()
+
+    def menu(self):
+        menu = pygame_menu.Menu('Welcome', 1280, 720,
+                                theme=pygame_menu.themes.THEME_BLUE)
+
+        menu.add.text_input('Name :', default="Insert nick",
+                            onchange=self.get_name)
+        menu.add.button('Play', self.main)
+        menu.add.button('Quit', pygame_menu.events.EXIT)
+
+        menu.mainloop(self.screen)
+
+    def draw(self):
         """
         Draw things to the window. Called once per frame.
         """
 
-        screen.fill((0, 150, 255))
+        self.screen.fill((0, 150, 255))
 
-        for gameObject in self.gameObjects:
-            gameObject.draw(screen)
+        # for gameObject in self.gameObjects:
+        #     gameObject.draw(self.screen)
+        for gameObject in self.gameObjects.values():
+            gameObject.draw(self.screen)
 
         pygame.display.flip()
 
     def main(self):
-        self.gameObjects.append(AirPlane(50, 50, 40, 40, 1,30,1,0))
+        client = Network()
+        self.my_id = client.connect(self.name)
 
-        
+        self.gameObjects[self.my_id] = AirPlane(
+            50, 50, 90, self.my_id)
 
-        pygame.init()
         fps = 60.0
         fpsClock = pygame.time.Clock()
 
-        width, height = 1280, 720
-        screen = pygame.display.set_mode((width, height))
-
         dt = 1/fps
         while True:
+            players = client.send(self.gameObjects[self.my_id].get_position())
+            # print(players.values())
+            for player_id, player_data in players.items():
+                if player_id != self.my_id:
+                    self.gameObjects[player_id] = AirPlane(
+                        player_data["x"], player_data["y"], player_data["angle"], player_id)
+
             self.update(dt)
-            self.draw(screen)
+            self.draw()
 
             dt = fpsClock.tick(fps)
 
-            ins, outs, ex = select.select([s], [], [], 0)
-            for inm in ins:
-                gameEvent = pickle.loads(inm.recv(BUFFERSIZE))
-                if gameEvent[0] == 'id update':
-                    playerid = gameEvent[1]
-                    print(playerid)
-                if gameEvent[0] == 'player locations':
-                    gameEvent.pop(0)
-                    minions = []
-                    for minion in gameEvent:
-                        if minion[0] != playerid:
-                            minions.append(AirPlane(minion[1], minion[2],40,40,1,30,1,minion[0]))    
-            ge = ['position update', playerid, self.gameObjects[0].x, self.gameObjects[0].y, self.gameObjects[0].angle, self.gameObjects[0].turn, self.gameObjects[0].velocity, self.gameObjects[0].acceleration, self.gameObjects[0].bullets]
-            s.send(pickle.dumps(ge))
 
 if __name__ == '__main__':
     GameEngineArek()
