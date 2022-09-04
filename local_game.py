@@ -2,7 +2,7 @@ import sys
 import pygame
 from pygame.locals import *
 import pygame_menu
-from scripts.client import Network
+from scripts.local_client import Network
 from scripts.airplane import Airplane
 from scripts.powerups import Heal
 

@@ -1,10 +1,6 @@
 import pygame
 import math
 from datetime import datetime, timedelta
-from pynput.keyboard import Key, Controller
-from pynput import keyboard
-
-# bullets = {}
 
 
 class Airplane(pygame.sprite.Sprite):
@@ -110,7 +106,6 @@ class Airplane(pygame.sprite.Sprite):
                 self.is_reloading = False
 
     def draw_health_bar(self, screen):
-        # print(type(self.health), self.health, type(self.max_health), self.max_health)
         pygame.draw.rect(screen, (0, 0, 0), (self.x - 25, self.y - 50, 50, 5))
         pygame.draw.rect(screen, (0, 255, 0), (self.x - 25,
                          self.y - 50, 50*(self.health/self.max_health), 5))
@@ -126,7 +121,6 @@ class Airplane(pygame.sprite.Sprite):
         if self.is_reloading:
             reload_progress = (
                 datetime.now() - self.last_reload).total_seconds() / self.reloadTime
-            print(reload_progress)
             pygame.draw.rect(screen, (255, 255, 255),
                              (self.x - 20, self.y + 40, 40*reload_progress, 10))
             pygame.draw.rect(screen, (0, 0, 0),

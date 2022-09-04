@@ -25,7 +25,8 @@ LAST_POWERUP_DROP = datetime.now()
 W, H = 1600, 830
 
 HOST_NAME = socket.gethostname()
-SERVER_IP = "67.207.73.42"  # 64.225.80.15 another ip
+SERVER_IP = "127.0.0.1"
+
 
 # try to connect to server
 try:
