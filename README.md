@@ -54,13 +54,13 @@ python3 game.py
 
 # Classes
 *Kamikaze
-__health: 280, maximum velocity: 18 (can't fire, only way to kill is to flight into another player)__
+_health: 280, maximum velocity: 18 (can't fire, only way to kill is to flight into another player)_
 
 *Scout
-__health: 70, maximum velocity 24, ammo: 8, reload time: 0.3s__
+_health: 70, maximum velocity 24, ammo: 8, reload time: 0.3s_
 
 *Heavy
-__health:200, maximum velocity: 12, ammo:15, reload time: 2s__
+_health:200, maximum velocity: 12, ammo:15, reload time: 2s_
 
 *Fighter
-__health: 100, maximum velocity: 15, ammo: 10, reload time: 1s__ 
+_health: 100, maximum velocity: 15, ammo: 10, reload time: 1s_
