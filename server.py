@@ -51,7 +51,7 @@ game_time = "Starting Soon"
 nxt = 1
 
 
-def get_start_location(players):
+def get_start_location():
     """
     picks a start location for a player based on other player
     locations. It wiill ensure it does not spawn inside another player
@@ -63,51 +63,67 @@ def get_start_location(players):
     return (x, y)
 
 
-def check_collision(conn):
+def check_collision():
     global players
     for player in players:
-        for bullet in players[player]['bullets']:
-            for player2 in players:
+        for player2 in players:
+            if player != player2:
+                if(math.sqrt(math.pow(players[player]['x'] - players[player2]['x'], 2) + math.pow(players[player]['y'] - players[player2]['y'], 2))) < 50:
+                    players[player]['health'] -= 100
+                    players[player2]['health'] -= 100
+
+                    if players[player]['health'] <= 0:
+                        print("player died")
+                        players[player2]['score'] += 1
+                        players[player]['health'] = 1000
+                        players[player]['x'], players[player2]['y'] = get_start_location()
+
+                    if players[player2]['health'] <= 0:
+                        print("player2 died")
+                        players[player2]['health'] = 1000
+                        players[player2]['x'], players[player2]['y'] = get_start_location()
+                        players[player]['score'] += 1
+
+            for bullet in players[player]['bullets']:
                 if player != player2:
-                    if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 40:
+                    if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 50:
                         print("[COLLISION]", players[player]['name'],
                               "hit", players[player2]['name'])
                         players[player2]['health'] -= 25
                         if players[player2]['health'] <= 0:
                             players[player]['score'] += 1
-                            players[player2]['health'] = 100
+                            players[player2]['health'] = 1000
                             players[player2]['x'], players[player2]['y'] = get_start_location(
-                                players)
+                            )
                         break
 
 
-def threaded_bot(_id):
-    """
-    creates a thread for the bot
-    :param _id: int
-    :return: None
-    """
-    global connections, players, balls, game_time, nxt, start
+# def threaded_bot(_id):
+    # """
+    # creates a thread for the bot
+    # :param _id: int
+    # :return: None
+    # """
+    # global connections, players, balls, game_time, nxt, start
 
-    current_id = _id
+    # current_id = _id
 
-    print("[LOG]", str(_id)+"-bot spawned.")
+    # print("[LOG]", str(_id)+"-bot spawned.")
 
-    bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 100)
+    # bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 100)
 
-    players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color,
-                           "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id}
+    # players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color,
+    #                        "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id, "class": "Kamikaze"}
 
-    while True:
-        bt.update()
+    # while True:
+    #     bt.update()
 
-        players[current_id]["angle"] = bt.angle
-        players[current_id]["x"] = bt.x
-        players[current_id]["y"] = bt.y
-        players[current_id]["score"] = bt.score
-        players[current_id]["health"] = bt.health
-        players[current_id]["bullets"] = bt.bullets
-
+    #     players[current_id]["angle"] = bt.angle
+    #     players[current_id]["x"] = bt.x
+    #     players[current_id]["y"] = bt.y
+    #     players[current_id]["score"] = bt.score
+    #     players[current_id]["health"] = bt.health
+    #     players[current_id]["bullets"] = bt.bullets
 
 def threaded_client(conn, _id):
     """
@@ -116,7 +132,7 @@ def threaded_client(conn, _id):
     :param _id: int
     :return: None
     """
-    global connections, players, balls, game_time, nxt, start
+    global connections, players, game_time
 
     current_id = _id
 
@@ -127,7 +143,7 @@ def threaded_client(conn, _id):
 
     # Setup properties for each new player
     color = colors[current_id]
-    x, y = get_start_location(players)
+    x, y = get_start_location()
     angle = random.randint(0, 360)
     players[current_id] = {"x": x, "y": y, "color": color, "score": 0,
                            "name": name, "angle": angle, "id": current_id}  # x, y color, score, name
@@ -150,7 +166,7 @@ def threaded_client(conn, _id):
         data = conn.recv(1024)
 
         # print(data)
-        #print("[DATA] Recieved", data, "from client id:", current_id)
+        # print("[DATA] Recieved", data, "from client id:", current_id)
         data = data.decode("utf-8")
 
         # look for specific commands from recieved data
@@ -161,8 +177,9 @@ def threaded_client(conn, _id):
             y = float(split_data[2])
             angle = float(split_data[3])
             health = float(split_data[4])
+            class_name = split_data[5]
             try:
-                bullets_data = split_data[5:]
+                bullets_data = split_data[6:]
                 players[current_id]['bullets'] = []
                 dct = {}
                 for bullet in bullets_data:
@@ -179,8 +196,9 @@ def threaded_client(conn, _id):
             players[current_id]["x"] = x
             players[current_id]["y"] = y
             players[current_id]["health"] = health
+            players[current_id]["class"] = class_name
 
-            check_collision(conn)
+            check_collision()
 
             send_data = pickle.dumps((players))
 
@@ -206,23 +224,14 @@ def threaded_client(conn, _id):
             connections -= 1
             del players[current_id]
             conn.close()  # close connection
-<<<<<<< HEAD
         time.sleep(1/30)
-=======
-
-        # except Exception as e:
-        #     print(e)
-        #     break
-
-        time.sleep(0.01)
->>>>>>> d758d08a85dde4b633587e317225f2c54ee52d84
 
 
 # MAINLOOP
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")
 
-start_new_thread(threaded_bot, (5,))
+# start_new_thread(threaded_bot, (5,))
 # _id += 1
 
 # Keep looping to accept new connections

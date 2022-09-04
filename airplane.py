@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 
 class Airplane(pygame.sprite.Sprite):
-    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple, health: int, score: int = 0):
+    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple, health: int, score: int = 0, stats: dict = None):
         self.x = x
         self.y = y
         self.width = 50
@@ -16,16 +16,20 @@ class Airplane(pygame.sprite.Sprite):
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
         self.playerid = playerid
-        self.leftBullet = 10
-        self.reloadTime = 1
+        self.leftBullet = stats['ammo']
+        self.max_bullets = stats['ammo']
+        self.reloadTime = stats['reload']
         self.last_reload = None
         self.is_reloading = False
         self.name = name
         self.color = color
-        self.max_velocity = 12
+        self.max_velocity = stats['velocity']
         self.bullets = []
-        self.health = health
+        self.max_health = stats['health']
+        self.health = self.max_hp(health)
         self.score = score
+        self.image_path = stats['img']
+        self.class_name = stats['class']
 
     def set_position(self, x, y):
         self.x = x
@@ -34,8 +38,16 @@ class Airplane(pygame.sprite.Sprite):
     def set_score(self, score):
         self.score = score
 
+    def max_hp(self, health):
+        if health > self.max_health:
+            return self.max_health
+        return health
+
     def set_health(self, health):
-        self.health = health
+        if health > self.max_health:
+            self.health = self.max_health
+        else:
+            self.health = health
 
     def create_bullet(self, x, y, angle, owner_id):
         self.bullets.append(Bullet(x, y, angle, owner_id))
@@ -44,9 +56,10 @@ class Airplane(pygame.sprite.Sprite):
         bullet_data = ""
         for bullet in self.bullets:
             bullet_data += bullet.get_position()
-        return f'move {round(self.x, 1)} {round(self.y, 1)} {round(self.angle, 1)} {self.health} {bullet_data}'
+        return f'move {round(self.x, 1)} {round(self.y, 1)} {round(self.angle, 1)} {self.health} {self.class_name} {bullet_data}'
 
     def update(self, dt):
+
         self.angle += self.turn * 0.2 * dt
         self.x -= self.velocity * \
             math.sin(math.radians(self.angle)) * dt * 0.03
@@ -67,20 +80,21 @@ class Airplane(pygame.sprite.Sprite):
         elif self.y > 720:
             self.y = 0
 
-        if self.leftBullet == 0:
+        if self.leftBullet == 0 and self.max_bullets > 0:
 
             if not self.is_reloading:
                 self.last_reload = datetime.now()
                 self.is_reloading = True
 
-            if self.last_reload + timedelta(seconds=1) < datetime.now() and self.is_reloading:
-                self.leftBullet = 10
+            if self.last_reload + timedelta(seconds=self.reloadTime) < datetime.now() and self.is_reloading:
+                self.leftBullet = self.max_bullets
                 self.is_reloading = False
 
     def draw_health_bar(self, screen):
-        pygame.draw.rect(screen, (0, 0, 0), (self.x - 25, self.y - 50, 50, 6))
+        # print(type(self.health), self.health, type(self.max_health), self.max_health)
+        pygame.draw.rect(screen, (0, 0, 0), (self.x - 25, self.y - 50, 50, 5))
         pygame.draw.rect(screen, (0, 255, 0), (self.x - 25,
-                         self.y - 50, self.health/2, 5))
+                         self.y - 50, 50*(self.health/self.max_health), 5))
 
     def draw_name(self, screen):
 
@@ -93,6 +107,7 @@ class Airplane(pygame.sprite.Sprite):
         if self.is_reloading:
             reload_progress = (
                 datetime.now() - self.last_reload).total_seconds() / self.reloadTime
+            print(reload_progress)
             pygame.draw.rect(screen, (255, 255, 255),
                              (self.x - 20, self.y + 40, 40*reload_progress, 10))
             pygame.draw.rect(screen, (0, 0, 0),
@@ -106,7 +121,7 @@ class Airplane(pygame.sprite.Sprite):
                          (self.x + 45*math.sin(radians), self.y + 45*math.cos(radians)), 3)
 
     def draw_airplane(self, screen):
-        img = pygame.image.load('img/airplane1.png')
+        img = pygame.image.load(self.image_path)
         img = pygame.transform.rotate(img, self.angle)
         screen.blit(img, img.get_rect(center=(self.x, self.y)))
 

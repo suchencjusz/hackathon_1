@@ -1,6 +1,8 @@
 import math
 import random
-import time, datetime
+import time
+import datetime
+
 
 class Bot():
     last_update = 0
@@ -45,10 +47,8 @@ class Bot():
         elif self.y > 720:
             self.y = 0
 
-
-
         if datetime.datetime.now().timestamp() - self.last_update_speed > 1:
-            rand = random.randint(1,10)
+            rand = random.randint(1, 10)
             if rand > 5:
                 if self.velocity < self.max_velocity:
                     self.velocity += self.acceleration
@@ -57,9 +57,9 @@ class Bot():
                     self.velocity -= self.acceleration
 
             self.last_update_speed = datetime.datetime.now().timestamp()
-        
+
         if datetime.datetime.now().timestamp() - self.last_update > 2:
-            self.turn = random.choice([-1,1])
+            self.turn = random.choice([-1, 1])
             self.last_update = datetime.datetime.now().timestamp()
-            
+
         time.sleep(0.001)

@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-from re import I
 import sys
 import pygame
 from pygame.locals import *
@@ -13,13 +11,15 @@ BULLETS = {}
 class GameEngineArek():
     def __init__(self):
         pygame.init()
+        self.classes = {"Kamikaze": {"health": 280, "velocity": 18, "ammo": 0, "reload": 0.1, "acceleration": 0.5, "img": "img/airplane1.png", "class": "Kamikaze"},
+                        "Scout": {"health": 70, "velocity": 24, "ammo": 8, "reload": 0.3, "acceleration": 0.5, "img": "img/ariplane2.png", "class": "Scout"},
+                        "Heavy": {"health": 200, "velocity": 12, "ammo": 15, "reload": 1.5, "acceleration": 0.5, "img": "img/ariplane3.png", "class": "Heavy"},
+                        "Fighter": {"health": 100, "velocity": 10, "ammo": 10, "reload": 1.5, "acceleration": 0.5, "img": "img/ariplane4.png", "class": "Fighter"}, }
+
         self.font = pygame.font.SysFont('arial', 16)
         self.name = "noname"
-<<<<<<< HEAD
+        self.chosen_class = "Kamikaze"
         self.bg = pygame.image.load('img/bg.png')
-=======
-        self.bg = pygame.image.load('img/bg.jpg')
->>>>>>> d758d08a85dde4b633587e317225f2c54ee52d84
         self.bg = pygame.transform.scale(self.bg, (1280, 720))
         self.sprites = pygame.sprite.Group()
         self.clock = pygame.time.Clock()
@@ -54,12 +54,18 @@ class GameEngineArek():
     def get_name(self, name):
         self.name = name
 
+    def get_class(self, *args):
+        self.chosen_class = args[0][0][0]
+
     def menu(self):
         menu = pygame_menu.Menu('Welcome', 1280, 720,
                                 theme=pygame_menu.themes.THEME_BLUE)
 
         menu.add.text_input('Name :', default="Insert nick",
                             onchange=self.get_name)
+
+        menu.add.selector(
+            'Class :', [(k, k) for k in self.classes.keys()], onchange=self.get_class)
         menu.add.button('Play', self.main)
         menu.add.button('Quit', pygame_menu.events.EXIT)
 
@@ -100,7 +106,7 @@ class GameEngineArek():
 
         self.my_id = server_data['id']
         self.gameObjects[self.my_id] = Airplane(
-            server_data["x"], server_data["y"], server_data["angle"], server_data["id"], self.name, server_data["color"], 100)
+            server_data["x"], server_data["y"], server_data["angle"], server_data["id"], self.name, server_data["color"], 1000, stats=self.classes[self.chosen_class])
 
         dt = 1/max_fps
         while True:
@@ -115,12 +121,13 @@ class GameEngineArek():
                     self.gameObjects[self.my_id].set_health(
                         player_data["health"])
                     self.gameObjects[self.my_id].set_score(
-                        int(player_data["score"]/2))
+                        player_data["score"])
                     self.gameObjects[self.my_id].set_position(
                         player_data["x"], player_data["y"])
                 else:
+                    # print(player_data)
                     self.gameObjects[player_id] = Airplane(
-                        player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"], player_data['health'], player_data['score'])
+                        player_data["x"], player_data["y"], player_data["angle"], player_id, player_data["name"], player_data["color"], player_data['health'], player_data['score'], self.classes[player_data['class']])
 
                     for bullet in player_data['bullets']:
                         cur_bullet_count += 1
