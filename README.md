@@ -46,11 +46,11 @@ python3 game.py
 ```
 
 # Controls
-**W** : increase velocity
-**S** : decrease velocity
-**A** : turn left
-**D** : turn right
-**SPACE** : fire
+* **W** : increase velocity
+* **S** : decrease velocity
+* **A** : turn left
+* **D** : turn right
+* **SPACE** : fire
 
 # Classes
 * Kamikaze
