@@ -11,7 +11,7 @@ import random
 import math
 import os
 from datetime import datetime, timedelta
-# from bot import Bot
+from bot import Bot
 
 # setup sockets
 S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -103,32 +103,36 @@ def check_collision():
                             break
 
 
-# def threaded_bot(_id):
-    # """
-    # creates a thread for the bot
-    # :param _id: int
-    # :return: None
-    # """
-    # global connections, players, balls, game_time, nxt, start
+def threaded_bot(_id):
+    """
+    creates a thread for the bot
+    :param _id: int
+    :return: None
+    """
 
-    # current_id = _id
 
-    # print("[LOG]", str(_id)+"-bot spawned.")
+    global connections, players, balls, game_time, nxt, start
 
-    # bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 100)
+    current_id = _id
 
-    # players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color,
-    #                        "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id, "class": "Kamikaze"}
+    print("[LOG]", str(_id)+"-bot spawned.")
 
-    # while True:
-    #     bt.update()
+    bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 280, 0, {"x": 300, "y": 300, "color": colors[1],
+                           "score": 0, "name": "bot(but)", "angle": 3, "id": current_id,"health": 280, "velocity": 18, "ammo": 0, "reload": 0.1, "acceleration": 0.5, "img": "img/airplane1.png", "class": "Kamikaze"})
 
-    #     players[current_id]["angle"] = bt.angle
-    #     players[current_id]["x"] = bt.x
-    #     players[current_id]["y"] = bt.y
-    #     players[current_id]["score"] = bt.score
-    #     players[current_id]["health"] = bt.health
-    #     players[current_id]["bullets"] = bt.bullets
+    players[current_id] = {"x": 300, "y": 300, "color": colors[1],
+                           "score": 0, "name": "bot(but)", "angle": 3, "id": current_id,"health": 280, "velocity": 18, "ammo": 0, "reload": 0.1, "acceleration": 0.5, "img": "img/airplane1.png", "class": "Kamikaze"}
+
+    while True:
+        bt.update()
+
+        players[current_id]["angle"] = bt.angle
+        players[current_id]["x"] = bt.x
+        players[current_id]["y"] = bt.y
+        players[current_id]["score"] = bt.score
+        players[current_id]["health"] = bt.health
+        players[current_id]["bullets"] = bt.bullets
+        players[current_id]["class"] = bt.class_name
 
 # def powerups():
 #     print("[LOG] Dropping powerups")
@@ -248,8 +252,8 @@ def threaded_client(conn, _id):
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")
 
-# start_new_thread(threaded_bot, (5,))
-# _id += 1
+start_new_thread(threaded_bot, (0,))
+_id += 1
 
 # Keep looping to accept new connections
 while True:
