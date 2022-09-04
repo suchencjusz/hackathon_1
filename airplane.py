@@ -1,6 +1,8 @@
 import pygame
 import math
 from datetime import datetime, timedelta
+from pynput.keyboard import Key, Controller
+from pynput import keyboard
 
 # bullets = {}
 
@@ -30,6 +32,11 @@ class Airplane(pygame.sprite.Sprite):
         self.score = score
         self.image_path = stats['img']
         self.class_name = stats['class']
+        self.is_a_pressed = False
+        self.is_d_pressed = False
+        self.is_w_pressed = False
+        self.is_s_pressed = False
+        self.is_space_pressed = False
 
     def set_position(self, x, y):
         self.x = x
@@ -59,6 +66,18 @@ class Airplane(pygame.sprite.Sprite):
         return f'move {round(self.x, 1)} {round(self.y, 1)} {round(self.angle, 1)} {self.health} {self.class_name} {bullet_data}'
 
     def update(self, dt):
+        if self.is_a_pressed:
+            self.turn = 1
+        elif self.is_d_pressed:
+            self.turn = -1
+        if self.is_w_pressed:
+            if self.velocity < self.max_velocity:
+                self.velocity += self.acceleration
+        elif self.is_s_pressed:
+            if self.velocity > 1:
+                self.velocity -= self.acceleration
+        if self.is_space_pressed:
+            self.fire()
 
         self.angle += self.turn * 0.2 * dt
         self.x -= self.velocity * \
@@ -142,19 +161,29 @@ class Airplane(pygame.sprite.Sprite):
             self.bullets.append(
                 Bullet(self.x, self.y, self.angle, self.playerid))
 
-    def controls(self, key):
-        if key == pygame.K_a:
-            self.turn = -1
-        elif key == pygame.K_d:
-            self.turn = 1
-        elif key == pygame.K_w:
-            if self.velocity < self.max_velocity:
-                self.velocity += self.acceleration
-        elif key == pygame.K_s:
-            if self.velocity > 1:
-                self.velocity -= self.acceleration
-        elif key == pygame.K_SPACE:
-            self.fire()
+    def controls(self, event):
+        if(event.type == pygame.KEYDOWN):
+            if(event.key == pygame.K_a):
+                self.is_a_pressed = True
+            if(event.key == pygame.K_d):
+                self.is_d_pressed = True
+            if(event.key == pygame.K_w):
+                self.is_w_pressed = True
+            if(event.key == pygame.K_s):
+                self.is_s_pressed = True
+            if(event.key == pygame.K_SPACE):
+                self.is_space_pressed = True
+        if(event.type == pygame.KEYUP):
+            if(event.key == pygame.K_a):
+                self.is_a_pressed = False
+            if(event.key == pygame.K_d):
+                self.is_d_pressed = False
+            if(event.key == pygame.K_w):
+                self.is_w_pressed = False
+            if(event.key == pygame.K_s):
+                self.is_s_pressed = False
+            if(event.key == pygame.K_SPACE):
+                self.is_space_pressed = False
 
 
 class Bullet():

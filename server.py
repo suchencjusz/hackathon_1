@@ -3,7 +3,6 @@ main server script for running agar.io server
 can handle multiple/infinite connections on the same
 local network
 """
-from calendar import c
 import socket
 from _thread import *
 import pickle
@@ -11,7 +10,8 @@ import time
 import random
 import math
 import os
-from bot import Bot
+from datetime import datetime, timedelta
+# from bot import Bot
 
 # setup sockets
 S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,6 +21,7 @@ S.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 os.system("fuser 5555/tcp -k")
 PORT = 5555
 
+LAST_POWERUP_DROP = datetime.now()
 W, H = 1600, 830
 
 HOST_NAME = socket.gethostname()
@@ -68,34 +69,38 @@ def check_collision():
     for player in players:
         for player2 in players:
             if player != player2:
-                if(math.sqrt(math.pow(players[player]['x'] - players[player2]['x'], 2) + math.pow(players[player]['y'] - players[player2]['y'], 2))) < 50:
-                    players[player]['health'] -= 100
-                    players[player2]['health'] -= 100
+                if player != "powerups" and player2 != "powerups":
+                    if(math.sqrt(math.pow(players[player]['x'] - players[player2]['x'], 2) + math.pow(players[player]['y'] - players[player2]['y'], 2))) < 50:
+                        players[player]['health'] -= 100
+                        players[player2]['health'] -= 100
 
-                    if players[player]['health'] <= 0:
-                        print("player died")
-                        players[player2]['score'] += 1
-                        players[player]['health'] = 1000
-                        players[player]['x'], players[player2]['y'] = get_start_location()
+                        if players[player]['health'] <= 0:
+                            print("player died")
+                            players[player2]['score'] += 1
+                            players[player]['health'] = 1000
+                            players[player]['x'], players[player2]['y'] = get_start_location(
+                            )
 
-                    if players[player2]['health'] <= 0:
-                        print("player2 died")
-                        players[player2]['health'] = 1000
-                        players[player2]['x'], players[player2]['y'] = get_start_location()
-                        players[player]['score'] += 1
-
-            for bullet in players[player]['bullets']:
-                if player != player2:
-                    if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 50:
-                        print("[COLLISION]", players[player]['name'],
-                              "hit", players[player2]['name'])
-                        players[player2]['health'] -= 25
                         if players[player2]['health'] <= 0:
-                            players[player]['score'] += 1
+                            print("player2 died")
                             players[player2]['health'] = 1000
                             players[player2]['x'], players[player2]['y'] = get_start_location(
                             )
-                        break
+                            players[player]['score'] += 1
+
+            if player != "powerups" and player2 != "powerups":
+                for bullet in players[player]['bullets']:
+                    if player != player2:
+                        if math.sqrt(math.pow(bullet['x'] - players[player2]['x'], 2) + math.pow(bullet['y'] - players[player2]['y'], 2)) < 50:
+                            print("[COLLISION]", players[player]['name'],
+                                  "hit", players[player2]['name'])
+                            players[player2]['health'] -= 25
+                            if players[player2]['health'] <= 0:
+                                players[player]['score'] += 1
+                                players[player2]['health'] = 1000
+                                players[player2]['x'], players[player2]['y'] = get_start_location(
+                                )
+                            break
 
 
 # def threaded_bot(_id):
@@ -125,6 +130,18 @@ def check_collision():
     #     players[current_id]["health"] = bt.health
     #     players[current_id]["bullets"] = bt.bullets
 
+# def powerups():
+#     print("[LOG] Dropping powerups")
+#     powerups = []
+#     count = random.randint(1, 4)
+#     for _ in range(count):
+#         x = random.randint(0, W)
+#         y = random.randint(0, H)
+#         powerups.append({"x": x, "y": y, "type": "health"})
+
+#     return powerups
+
+
 def threaded_client(conn, _id):
     """
     runs in a new thread for each player connected to the server
@@ -132,7 +149,7 @@ def threaded_client(conn, _id):
     :param _id: int
     :return: None
     """
-    global connections, players, game_time
+    global connections, players, game_time, LAST_POWERUP_DROP
 
     current_id = _id
 
@@ -161,12 +178,12 @@ def threaded_client(conn, _id):
 	'''
     # send_data = str.encode("1")
     while True:
-        # try:
-        # Recieve data from client
-        data = conn.recv(1024)
+        # if (datetime.now() - LAST_POWERUP_DROP) > timedelta(seconds=3):
+        #     players['powerups'] = powerups()
 
-        # print(data)
-        # print("[DATA] Recieved", data, "from client id:", current_id)
+        #     LAST_POWERUP_DROP = datetime.now()
+
+        data = conn.recv(1024)
         data = data.decode("utf-8")
 
         # look for specific commands from recieved data

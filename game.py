@@ -4,6 +4,10 @@ from pygame.locals import *
 import pygame_menu
 from client import Network
 from airplane import Airplane
+from powerups import Heal
+from pynput.keyboard import Key, Controller
+from pynput import keyboard
+
 
 BULLETS = {}
 
@@ -11,12 +15,14 @@ BULLETS = {}
 class GameEngineArek():
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
         self.classes = {"Kamikaze": {"health": 280, "velocity": 18, "ammo": 0, "reload": 0.1, "acceleration": 0.5, "img": "img/airplane1.png", "class": "Kamikaze"},
                         "Scout": {"health": 70, "velocity": 24, "ammo": 8, "reload": 0.3, "acceleration": 0.5, "img": "img/ariplane2.png", "class": "Scout"},
                         "Heavy": {"health": 200, "velocity": 12, "ammo": 15, "reload": 1.5, "acceleration": 0.5, "img": "img/ariplane3.png", "class": "Heavy"},
                         "Fighter": {"health": 100, "velocity": 10, "ammo": 10, "reload": 1.5, "acceleration": 0.5, "img": "img/ariplane4.png", "class": "Fighter"}, }
 
         self.font = pygame.font.SysFont('arial', 16)
+        self.keyboard = Controller()
         self.name = "noname"
         self.chosen_class = "Kamikaze"
         self.bg = pygame.image.load('img/bg.png')
@@ -31,15 +37,6 @@ class GameEngineArek():
         self.main()
 
     def update(self, dt):
-        """
-        Update game. Called once per frame.
-        dt is the amount of time passed since last frame.
-        If you want to have constant apparent movement no matter your framerate,
-        what you can do is something like
-
-        x += v * dt
-
-        and this will scale your velocity based on time. Extend as necessary."""
 
         self.gameObjects[self.my_id].update(dt)
 
@@ -48,8 +45,7 @@ class GameEngineArek():
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-                self.gameObjects[self.my_id].controls(event.key)
+            self.gameObjects[self.my_id].controls(event)
 
     def get_name(self, name):
         self.name = name
