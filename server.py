@@ -252,8 +252,8 @@ def threaded_client(conn, _id):
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")
 
-start_new_thread(threaded_bot, (0,))
-_id += 1
+# start_new_thread(threaded_bot, (0,))
+# _id += 1
 
 # Keep looping to accept new connections
 while True:
