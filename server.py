@@ -25,7 +25,7 @@ LAST_POWERUP_DROP = datetime.now()
 W, H = 1600, 830
 
 HOST_NAME = socket.gethostname()
-SERVER_IP = "67.207.73.42"  # 64.225.80.15 another ip
+SERVER_IP = "0.0.0.0"
 
 # try to connect to server
 try:
@@ -101,45 +101,6 @@ def check_collision():
                                 players[player2]['x'], players[player2]['y'] = get_start_location(
                                 )
                             break
-
-
-# def threaded_bot(_id):
-    # """
-    # creates a thread for the bot
-    # :param _id: int
-    # :return: None
-    # """
-    # global connections, players, balls, game_time, nxt, start
-
-    # current_id = _id
-
-    # print("[LOG]", str(_id)+"-bot spawned.")
-
-    # bt = Bot(300, 300, 30, _id, "bot(but)", colors[1], 100)
-
-    # players[current_id] = {"x": bt.x, "y": bt.y, "color": bt.color,
-    #                        "score": 0, "name": bt.name, "angle": bt.angle, "id": current_id, "class": "Kamikaze"}
-
-    # while True:
-    #     bt.update()
-
-    #     players[current_id]["angle"] = bt.angle
-    #     players[current_id]["x"] = bt.x
-    #     players[current_id]["y"] = bt.y
-    #     players[current_id]["score"] = bt.score
-    #     players[current_id]["health"] = bt.health
-    #     players[current_id]["bullets"] = bt.bullets
-
-# def powerups():
-#     print("[LOG] Dropping powerups")
-#     powerups = []
-#     count = random.randint(1, 4)
-#     for _ in range(count):
-#         x = random.randint(0, W)
-#         y = random.randint(0, H)
-#         powerups.append({"x": x, "y": y, "type": "health"})
-
-#     return powerups
 
 
 def threaded_client(conn, _id):
@@ -248,7 +209,7 @@ def threaded_client(conn, _id):
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for connections")
 
-# start_new_thread(threaded_bot, (5,))
+# start_new_thread(threaded_bot, (0,))
 # _id += 1
 
 # Keep looping to accept new connections
