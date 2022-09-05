@@ -8,26 +8,49 @@ class Bot():
     last_update = 0
     last_update_speed = 0
 
-    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple, health: int, score: int = 0):
+    def __init__(self, x: float, y: float, angle: float, playerid: int, name: str, color: tuple, health: int, score: int = 0, stats: dict = None):
+        # self.x = x
+        # self.y = y
+        # self.width = 50
+        # self.height = 50
+        # self.velocity = 9
+        # self.acceleration = 0.5
+        # self.angle = angle
+        # self.turn = 1  # -1: left, 1: right
+        # self.playerid = playerid
+        # self.leftBullet = 10
+        # self.reloadTime = 1
+        # self.last_reload = None
+        # self.is_reloading = False
+        # self.name = name
+        # self.color = color
+        # self.max_velocity = 12
+        # self.bullets = []
+        # self.health = health
+        # self.score = score
         self.x = x
         self.y = y
         self.width = 50
         self.height = 50
-        self.velocity = 9
+        self.velocity = 1
         self.acceleration = 0.5
         self.angle = angle
         self.turn = 1  # -1: left, 1: right
         self.playerid = playerid
-        self.leftBullet = 10
-        self.reloadTime = 1
+        self.leftBullet = stats['ammo']
+        self.max_bullets = stats['ammo']
+        self.reloadTime = stats['reload']
         self.last_reload = None
         self.is_reloading = False
         self.name = name
         self.color = color
-        self.max_velocity = 12
+        self.max_velocity = stats['velocity']
         self.bullets = []
+        self.max_health = stats['health']
         self.health = health
         self.score = score
+        self.image_path = stats['img']
+        self.class_name = stats['class']
 
     def update(self):
         dt = 1/2
